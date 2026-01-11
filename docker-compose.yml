@@ -1,0 +1,7 @@
+services:
+  jetson-website:
+    build: .
+    container_name: jetson-website
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:80" # If you do not use a reverse proxy, remove before 8090

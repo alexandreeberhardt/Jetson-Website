@@ -6,8 +6,7 @@
     <title>Jetson Scroll Animation</title>
 
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link rel="preload" href="Jetson.gltf" as="fetch" fetchpriority="high">
-    <link rel="preload" href="Jetson.bin" as="fetch" fetchpriority="high">
+    <link rel="preload" href="Jetson-meshopt.glb" as="fetch" fetchpriority="high">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -149,13 +148,14 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
         const CONFIG = {
             cameraZ: 15,
             lightPos: new THREE.Vector3(2, 5, 2),
             modelScale: 100,
             rotationSpeed: 0.005,
-            modelPath: 'Jetson.gltf'
+            modelPath: 'Jetson-meshopt.glb'
         };
 
         const scene = new THREE.Scene();
@@ -167,6 +167,18 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
+        let renderPending = false;
+
+        function renderWhenReady() {
+            if (renderPending) return;
+
+            renderPending = true;
+            requestAnimationFrame(() => {
+                renderPending = false;
+                renderer.render(scene, camera);
+            });
+        }
+
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
 
@@ -176,6 +188,7 @@
 
         let model = null;
         const loader = new GLTFLoader();
+        loader.setMeshoptDecoder(MeshoptDecoder);
 
         loader.load(
             CONFIG.modelPath,
@@ -197,6 +210,7 @@
                 );
 
                 scene.add(model);
+                renderWhenReady();
                 document.getElementById('model-status').hidden = true;
                 console.log("Modèle chargé avec succès !");
             },
@@ -219,19 +233,17 @@
             }
         }
 
-        window.addEventListener('scroll', onScroll);
+        window.addEventListener('scroll', () => {
+            onScroll();
+            renderWhenReady();
+        }, { passive: true });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderWhenReady();
         });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-        animate();
 
     </script>
 </body>
